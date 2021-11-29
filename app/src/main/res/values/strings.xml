@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">WheelChairController</string>
+    <string name="stop"><b>STOP</b></string>
+    <string name="connection_status">Connection Status:</string>
+    <string name="go_right">Go Right</string>
+    <string name="go_left">Go Left</string>
+    <string name="go_straight">Forward</string>
+    <string name="go_back">Backward</string>
+    <string name="connect_to_pc">Connect to PC</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="refresh">Refresh</string>
+</resources>
