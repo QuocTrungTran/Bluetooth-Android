@@ -28,6 +28,7 @@ class MainActivity : AppCompatActivity() {
         lateinit var m_bluetoothAdapter: BluetoothAdapter
         var m_isConnected: Boolean = false
         lateinit var m_address: String
+        lateinit var toggleBtn: ToggleButton
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,27 +48,33 @@ class MainActivity : AppCompatActivity() {
      */
     private fun binding() {
 
-        val toggleBtn = findViewById<ToggleButton>(R.id.toggle_button)
+        toggleBtn = findViewById<ToggleButton>(R.id.toggle_button)
         toggleBtn.isEnabled = false
+        toggleBtn.setTextColor(Color.GRAY)
 
         val stopBtn = findViewById<Button>(R.id.stop_button)
         stopBtn.setBackgroundColor(Color.RED)
-        stopBtn.setOnClickListener() {control(Direction.Stop)}
+        stopBtn.setOnClickListener {control(Direction.Stop, longPress = false)}
+        stopBtn.setOnLongClickListener {control(Direction.Stop, longPress = true)}
 
 
         val rightBtn = findViewById<ImageButton>(R.id.right_button)
-        rightBtn.setOnClickListener {control(Direction.Right) }
+        rightBtn.setOnClickListener {control(Direction.Right, longPress = false) }
+        rightBtn.setOnLongClickListener {control(Direction.Right, longPress = true) }
 
 
         val leftBtn = findViewById<ImageButton>(R.id.left_button)
-        leftBtn.setOnClickListener {control(Direction.Left)}
+        leftBtn.setOnClickListener {control(Direction.Left, longPress = false)}
+        leftBtn.setOnLongClickListener {control(Direction.Left, longPress = true)}
 
         val upBtn = findViewById<ImageButton>(R.id.up_button)
-        upBtn.setOnClickListener {control(Direction.Up)}
+        upBtn.setOnClickListener {control(Direction.Up, longPress = false)}
+        upBtn.setOnLongClickListener {control(Direction.Up, longPress = true)}
 
 
         val downBtn = findViewById<ImageButton>(R.id.down_button)
-        downBtn.setOnClickListener {control(Direction.Down) }
+        downBtn.setOnClickListener {control(Direction.Down, longPress = false) }
+        downBtn.setOnLongClickListener {control(Direction.Down, longPress = true) }
 
         val connectBtn = findViewById<Button>(R.id.connect_button)
         connectBtn.setOnClickListener { connectDevice() }
@@ -100,20 +107,40 @@ class MainActivity : AppCompatActivity() {
                 m_bluetoothSocket!!.close()
                 m_bluetoothSocket = null
                 m_isConnected = false
+                toggleBtn.toggle()
+                toggleBtn.setTextColor(Color.GRAY)
             } catch (e: IOException) {
                 e.printStackTrace()
             }
         }
-        finish()
     }
 
-    private fun control(direction: Direction) {
-        when(direction) {
-            Direction.Up -> sendCommand("Up click")
-            Direction.Down -> sendCommand("Down click")
-            Direction.Right -> sendCommand("Right click")
-            Direction.Left -> sendCommand("Left click")
-            Direction.Stop -> sendCommand("Stop click")
+    private fun control(direction: Direction, longPress: Boolean): Boolean {
+        if (!longPress) {
+            when(direction) {
+                Direction.Up ->  {
+                    sendCommand("Up click")
+                    return true
+                }
+                Direction.Down -> {
+                    sendCommand("Down click")
+                    return true
+                }
+                Direction.Right -> {
+                    sendCommand("Right click")
+                    return true
+                }
+                Direction.Left -> {
+                    sendCommand("Left click")
+                    return true
+                }
+                Direction.Stop -> {
+                    sendCommand("Stop click")
+                    return true
+                }
+            }
+        } else {
+            return true
         }
     }
 
@@ -154,6 +181,8 @@ class MainActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(context, "Connected", Toast.LENGTH_SHORT).show()
                 m_isConnected = true
+                toggleBtn.toggle()
+                toggleBtn.setTextColor(Color.GREEN)
             }
             m_progress.dismiss()
         }
