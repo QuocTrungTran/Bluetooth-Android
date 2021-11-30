@@ -50,7 +50,7 @@ class SelectDevice : AppCompatActivity() {
             for (device: BluetoothDevice in m_pairedDevices) {
                 list.add((device))
                 nameList.add((device.name + "  " +device.address))
-                Log.i("device", "" + device.name + "| Address: " + device.address)
+                Log.i("device", "" + device.name + " | Address: " + device.address)
             }
         } else {
             Toast.makeText(this, "No paired Bluetooth devices found", Toast.LENGTH_SHORT).show()
@@ -65,6 +65,7 @@ class SelectDevice : AppCompatActivity() {
             val intent = Intent(this, MainActivity::class.java)
             intent.putExtra(EXTRA_ADDRESS, address)
             startActivity(intent)
+            finish()
 
         }
     }
