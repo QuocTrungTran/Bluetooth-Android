@@ -11,7 +11,10 @@ import android.graphics.Color
 import android.os.AsyncTask
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.View
 import android.widget.*
 import java.io.IOException
 import java.util.*
@@ -28,61 +31,56 @@ class MainActivity : AppCompatActivity() {
         lateinit var m_bluetoothAdapter: BluetoothAdapter
         var m_isConnected: Boolean = false
         lateinit var m_address: String
-        lateinit var toggleBtn: ToggleButton
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        binding()
-
-        // get the connected device's MAC bluetooth address
-        m_address = intent.getStringExtra(SelectDevice.EXTRA_ADDRESS).toString()
-        if (m_address != "null") {
-            ConnectToDevice(this).execute()
-        }
-    }
-
-    /**
-     * bind buttons
-     */
-    private fun binding() {
-
-        toggleBtn = findViewById<ToggleButton>(R.id.toggle_button)
+        val toggleBtn = findViewById<ToggleButton>(R.id.toggle_button)
         toggleBtn.isEnabled = false
         toggleBtn.setTextColor(Color.GRAY)
 
         val stopBtn = findViewById<Button>(R.id.stop_button)
         stopBtn.setBackgroundColor(Color.RED)
-        stopBtn.setOnClickListener {control(Direction.Stop, longPress = false)}
-        stopBtn.setOnLongClickListener {control(Direction.Stop, longPress = true)}
+        stopBtn.setOnClickListener { control(Direction.Stop)}
 
 
         val rightBtn = findViewById<ImageButton>(R.id.right_button)
-        rightBtn.setOnClickListener {control(Direction.Right, longPress = false) }
-        rightBtn.setOnLongClickListener {control(Direction.Right, longPress = true) }
+        rightBtn.setOnClickListener {control(Direction.Right) }
+        rightBtn.setOnLongClickListener { v -> handleLongPress(v, Direction.Right) }
 
 
         val leftBtn = findViewById<ImageButton>(R.id.left_button)
-        leftBtn.setOnClickListener {control(Direction.Left, longPress = false)}
-        leftBtn.setOnLongClickListener {control(Direction.Left, longPress = true)}
+        leftBtn.setOnClickListener {control(Direction.Left, )}
+        leftBtn.setOnLongClickListener { v -> handleLongPress(v, Direction.Left)}
 
         val upBtn = findViewById<ImageButton>(R.id.up_button)
-        upBtn.setOnClickListener {control(Direction.Up, longPress = false)}
-        upBtn.setOnLongClickListener {control(Direction.Up, longPress = true)}
+        upBtn.setOnClickListener {control(Direction.Up)}
+        upBtn.setOnLongClickListener {v -> handleLongPress(v, Direction.Up)}
 
 
         val downBtn = findViewById<ImageButton>(R.id.down_button)
-        downBtn.setOnClickListener {control(Direction.Down, longPress = false) }
-        downBtn.setOnLongClickListener {control(Direction.Down, longPress = true) }
+        downBtn.setOnClickListener {control(Direction.Down) }
+        downBtn.setOnLongClickListener {v -> handleLongPress(v, Direction.Down) }
 
         val connectBtn = findViewById<Button>(R.id.connect_button)
         connectBtn.setOnClickListener { connectDevice() }
 
         val disconnectBtn = findViewById<Button>(R.id.disconnect_button)
-        disconnectBtn.setOnClickListener{disconnectDevice()}
+        disconnectBtn.setOnClickListener{disconnectDevice(toggleBtn)}
+
+        // get the connected device's MAC bluetooth address
+        m_address = intent.getStringExtra(SelectDevice.EXTRA_ADDRESS).toString()
+        if (m_address != "null") {
+            ConnectToDevice(this, toggleBtn).execute()
+        }
     }
 
+
+    /**
+     * send a string to other device via bluetooth
+     * @param input: the string we want to send
+     */
     private fun sendCommand(input: String) {
         if (m_bluetoothSocket != null) {
             try {
@@ -101,7 +99,10 @@ class MainActivity : AppCompatActivity() {
         startActivity(intent)
     }
 
-    private fun disconnectDevice() {
+    /**
+     * close the socket and set toggle button to off
+     */
+    private fun disconnectDevice(toggleBtn: ToggleButton) {
         if (m_bluetoothSocket != null) {
             try {
                 m_bluetoothSocket!!.close()
@@ -115,41 +116,64 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun control(direction: Direction, longPress: Boolean): Boolean {
-        if (!longPress) {
-            when(direction) {
-                Direction.Up ->  {
-                    sendCommand("Up click")
-                    return true
-                }
-                Direction.Down -> {
-                    sendCommand("Down click")
-                    return true
-                }
-                Direction.Right -> {
-                    sendCommand("Right click")
-                    return true
-                }
-                Direction.Left -> {
-                    sendCommand("Left click")
-                    return true
-                }
-                Direction.Stop -> {
-                    sendCommand("Stop click")
-                    return true
+    /**
+     * send command for each 100 milliseconds when we're holding down a button
+     * @param v: our buttons
+     * @param direction:
+     */
+    private fun handleLongPress (v: View, direction: Direction): Boolean {
+        val handler = Handler(Looper.myLooper()!!)
+        val runnable: Runnable = object : Runnable {
+            override fun run() {
+                handler.removeCallbacks(this)
+                if (v.isPressed) {
+                    control(direction)
+                    handler.postDelayed(this, 100)
                 }
             }
-        } else {
-            return true
+        }
+        handler.postDelayed(runnable, 0)
+        return true
+    }
+
+    /**
+     * function to send directions
+     * @param direction: up, down, left, right
+     */
+    private fun control(direction: Direction): Boolean {
+
+        when(direction) {
+            Direction.Up ->  {
+                sendCommand("Up click")
+                return true
+            }
+            Direction.Down -> {
+                sendCommand("Down click")
+                return true
+            }
+            Direction.Right -> {
+                sendCommand("Right click")
+                return true
+            }
+            Direction.Left -> {
+                sendCommand("Left click")
+                return true
+            }
+            Direction.Stop -> {
+                sendCommand("Stop click")
+                return true
+            }
         }
     }
 
-    private class ConnectToDevice(c : Context) : AsyncTask<Void, Void, String>() {
+    private class ConnectToDevice(c : Context, toggleButton: ToggleButton) : AsyncTask<Void, Void, String>() {
         private var connectSuccess: Boolean = true
         private val context: Context
+        private val toggleBtn: ToggleButton
 
         init {
             this.context = c
+            this.toggleBtn = toggleButton
         }
 
         override fun onPreExecute() {
